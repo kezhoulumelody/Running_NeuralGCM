@@ -49,17 +49,25 @@ Device: cuda:1 platform: gpu
 ## Add config files into .bashrc
 
 ```bash
-mkdir -p /data/kezhoulumelody/.cache/jax
-mkdir -p /data/kezhoulumelody/.cache
-mkdir -p /data/kezhoulumelody/.config/matplotlib
+mkdir -p /data/<user>/.cache/jax
+mkdir -p /data/<user>/.cache
+mkdir -p /data/<user>/.config/matplotlib
 
-echo 'export XDG_CACHE_HOME=/data/kezhoulumelody/.cache' >> ~/.bashrc
-echo 'export MPLCONFIGDIR=/data/kezhoulumelody/.config/matplotlib' >> ~/.bashrc
-echo 'export JAX_CACHE_DIR=/data/kezhoulumelody/.cache/jax' >> ~/.bashrc
+echo 'export XDG_CACHE_HOME=/data/<user>/.cache' >> ~/.bashrc
+echo 'export MPLCONFIGDIR=/data/<user>/.config/matplotlib' >> ~/.bashrc
+echo 'export JAX_CACHE_DIR=/data/<user>/.cache/jax' >> ~/.bashrc
 
 # Now reload the shell
-
+source ~/.bashrc
 ```
+> [!NOTE]
+> If using VSCode, the ipykernel also needs to be installed
+
+```bash
+pip install ipykernel
+python -m ipykernel install --user --name /data/<user>/mlclimate --display-name "Python (mlclimate)"
+```
+
 ## Install NeuralGCM
 
 
