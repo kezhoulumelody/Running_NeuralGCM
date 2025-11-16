@@ -85,3 +85,4 @@ pip install neuralgcm
 
 ```
 
+## Testing NeuralGCM
