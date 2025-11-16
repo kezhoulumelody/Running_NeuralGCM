@@ -85,7 +85,7 @@ pip install neuralgcm
 
 ```
 
-## Testing NeuralGCM
+## Running NeuralGCM
 
 First load necessary libs:
 
@@ -232,5 +232,97 @@ print(f"Saved restart at step {step_index} in {ckpt_path}")
 
 ```
 
+## Restart a run
 
+There are two ways to restart a run, one from the checkpointer files and the other directly from final state.
+
+The easy way is to start from final_state (assuming final_state is correctly encoded)
+
+```python
+# Time setup for the next 30 days
+inner_steps = 24                     # same as before
+extra_ndays = 30
+extra_outer_steps = extra_ndays * 24 // inner_steps   # = 30
+
+timedelta = np.timedelta64(1, 'h') * inner_steps
+start_step = restart_step          # 30
+end_step = restart_step + extra_outer_steps  # 60
+
+# Time coordinate for the *new* segment (still in hours since t0)
+times_segment = np.arange(start_step, end_step) * inner_steps
+# state_new = model.encode(final_state, input_forcings, rng_key)
+
+# Continue the forecast from the restored state
+final_state_3, predictions_3 = model.unroll(
+    final_state,
+    all_forcings,
+    steps=extra_outer_steps,
+    timedelta=timedelta,
+    start_with_input=True,   # IMPORTANT: do not set it to FALSE to prevent timestamps mismatch
+)
+
+# Convert to xarray
+predictions_3_ds = model.data_to_xarray(predictions_3, times=times_segment)
+predictions_3_ds.to_netcdf("/data/xxx/xxx/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0002-directly-from-final-state.nc")
+```
+
+We can also start from saved restart file. Note, restart file is NOT directly saved as netCDF for xarry data format.
+
+```python
+# ==============================
+#   LOAD RESTART FILES
+# ==============================
+
+## Restore the state at step 30 
+RESTART_ROOT = "/data/kezhoulumelody/melody_data/NeuralGCM_restart/ngcm28_restarts_test"
+
+# We stopped the first run at step 30
+restart_step = 30
+
+ckpt_path = os.path.join(RESTART_ROOT, str(restart_step))
+
+# # ---------- build abstract (template) state ----------
+inputs0   = model.inputs_from_xarray(eval_ngcm28.isel(time=0))
+forcings0 = model.forcings_from_xarray(eval_ngcm28.isel(time=0))
+rng0      = jax.random.key(42)
+
+dummy_state = model.encode(inputs0, forcings0, rng0)
+
+abstract_state = jax.tree_util.tree_map(
+    ocp.utils.to_shape_dtype_struct, dummy_state
+)
+
+# ---------- restore ----------
+checkpointer = ocp.StandardCheckpointer()
+state = checkpointer.restore(ckpt_path, abstract_state)
+
+# ==============================
+#   CONTINUE THE RUN
+# ==============================
+
+# Time setup for the next 30 days
+inner_steps = 24                     # same as before
+extra_ndays = 30
+extra_outer_steps = extra_ndays * 24 // inner_steps   # = 30
+
+timedelta = np.timedelta64(1, 'h') * inner_steps
+start_step = restart_step           # 30
+end_step = restart_step + extra_outer_steps  # 60
+
+# Time coordinate for the *new* segment (still in hours since t0)
+times_segment = np.arange(start_step, end_step) * inner_steps
+
+# Continue the forecast from the restored state
+final_state_2, predictions_2 = model.unroll(
+    state,
+    all_forcings,
+    steps=extra_outer_steps,
+    timedelta=timedelta,
+    start_with_input=True,   # IMPORTANT: we're continuing, not restarting from ERA5
+)
+
+# Convert to xarray
+predictions_2_ds = model.data_to_xarray(predictions_2, times=times_segment)
+predictions_2_ds.to_netcdf("/data/xxx/xxx/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0002-part2.nc")
+```
 
