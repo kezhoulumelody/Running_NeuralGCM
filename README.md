@@ -40,3 +40,8 @@ print("x^2:", x**2)
 for d in jax.devices():
     print("Device:", d, "platform:", d.platform)
 ```
+Correctly installed JAX should give output similar to:
+
+Device: cuda:0 platform: gpu
+Device: cuda:1 platform: gpu
+
