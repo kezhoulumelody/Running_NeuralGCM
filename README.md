@@ -13,7 +13,8 @@ source /data/<user>/miniconda3/etc/profile.d/conda.sh
 
 source ~/.bashrc
 
-# create your ML environment inside /data
+# Create your ML environment inside /data
+conda create -p /data/<user>/mlclimate python=3.11 -y
+conda activate /data/<user>/mlclimate
 
-
-
+# Install basic libaries
