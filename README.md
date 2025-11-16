@@ -214,7 +214,7 @@ final_state, predictions = model.unroll(
 ) 
 
 predictions_ds = model.data_to_xarray(predictions, times=times)
-predictions_ds.to_netcdf("/data/kezhoulumelody/melody_data/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0001.nc")
+predictions_ds.to_netcdf("/data/xxx/xxx/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0001.nc")
 
 # ==============================
 #   SAVE RESTART FILES
