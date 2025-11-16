@@ -17,4 +17,9 @@ source ~/.bashrc
 conda create -p /data/<user>/mlclimate python=3.11 -y
 conda activate /data/<user>/mlclimate
 
-# Install basic libaries
+# Install basic libraries
+conda install -y \
+    numpy scipy pandas xarray netcdf4 \
+    matplotlib jupyterlab pip
+
+```bash
