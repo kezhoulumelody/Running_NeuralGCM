@@ -325,4 +325,10 @@ final_state_2, predictions_2 = model.unroll(
 predictions_2_ds = model.data_to_xarray(predictions_2, times=times_segment)
 predictions_2_ds.to_netcdf("/data/xxx/xxx/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0002-part2.nc")
 ```
+> [!TIP]
+> It is important to monitor our GPU usage when running the model. To do so, use the following command
+> ```bash
+> nvidia-smi -l 2
+> ```
+
 
