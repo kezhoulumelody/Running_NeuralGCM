@@ -61,13 +61,25 @@ echo 'export JAX_CACHE_DIR=/data/<user>/.cache/jax' >> ~/.bashrc
 source ~/.bashrc
 ```
 > [!NOTE]
-> If using VSCode, the ipykernel also needs to be installed
+> If you are using VSCode, the ipykernel also needs to be installed
 
 ```bash
 pip install ipykernel
 python -m ipykernel install --user --name /data/<user>/mlclimate --display-name "Python (mlclimate)"
 ```
+In VSCode, Cmd + Shift + P to open Command Palette, and search for "Python: Select Interpreter" and then choose corresponding interpreter.
+
+> [!WARNING]
+> Since conda is installed in /data/ instead of default home directory, extra steps are needed to load conda evertime you login.
+
+```bash
+echo 'source /data/kezhoulumelody/miniconda3/etc/profile.d/conda.sh' >> ~/.bash_profile
+source ~/.bash_profile
+```
 
 ## Install NeuralGCM
+Next we install the Neural GCM from https://neuralgcm.readthedocs.io/en/stable/installation.html
 
-
+```bash
+pip install neuralgcm
+```
