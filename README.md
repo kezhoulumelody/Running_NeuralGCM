@@ -22,4 +22,7 @@ conda install -y \
     numpy scipy pandas xarray netcdf4 \
     matplotlib jupyterlab pip
 
-```bash
+# CUDA 13 GPU JAX
+pip install --upgrade "jax[cuda13]"
+```
+
