@@ -25,4 +25,4 @@ conda install -y \
 # CUDA 13 GPU JAX
 pip install --upgrade "jax[cuda13]"
 ```
-
+[!Note]
