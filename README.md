@@ -86,3 +86,151 @@ pip install neuralgcm
 ```
 
 ## Testing NeuralGCM
+
+First load necessary libs:
+
+```python
+import gcsfs
+import jax
+import numpy as np
+import pickle
+import xarray
+
+from dinosaur import horizontal_interpolation
+from dinosaur import spherical_harmonic
+from dinosaur import xarray_utils
+import neuralgcm
+```
+
+Load a pre-trained model:
+
+```python
+model_name = 'v1/deterministic_0_7_deg.pkl'  #@param ['v1/deterministic_0_7_deg.pkl', 'v1/deterministic_1_4_deg.pkl', 'v1/deterministic_2_8_deg.pkl', 'v1/stochastic_1_4_deg.pkl', 'v1_precip/stochastic_precip_2_8_deg.pkl', 'v1_precip/stochastic_evap_2_8_deg.pkl'] {type: "string"}
+
+gcs = gcsfs.GCSFileSystem(token='anon')
+with gcs.open(f'gs://neuralgcm/models/{model_name}', 'rb') as f:
+  ckpt = pickle.load(f)
+
+model = neuralgcm.PressureLevelModel.from_checkpoint(ckpt)
+```
+
+Load ERA5 data from GCP/Zarr and regrid it to model's native grids:
+
+```python
+vera5_path = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
+full_era5 = xarray.open_zarr(
+    era5_path, chunks=None, storage_options=dict(token='anon')
+)
+
+demo_start_time = '2009-02-14'
+demo_end_time = '2009-02-18'
+data_inner_steps = 24  # process every 24th hour
+
+sliced_era5 = (
+    full_era5
+    [model.input_variables + model.forcing_variables]
+    .pipe(
+        xarray_utils.selective_temporal_shift,
+        variables=model.forcing_variables,
+        time_shift='24 hours',
+    )
+    .sel(time=slice(demo_start_time, demo_end_time, data_inner_steps))
+    .compute()
+)
+
+## Regrid to NeuralGCM’s native resolution:
+era5_grid = spherical_harmonic.Grid(
+    latitude_nodes=full_era5.sizes['latitude'],
+    longitude_nodes=full_era5.sizes['longitude'],
+    latitude_spacing=xarray_utils.infer_latitude_spacing(full_era5.latitude),
+    longitude_offset=xarray_utils.infer_longitude_offset(full_era5.longitude),
+)
+regridder = horizontal_interpolation.ConservativeRegridder(
+    era5_grid, model.data_coords.horizontal, skipna=True
+)
+eval_era5 = xarray_utils.regrid(sliced_era5, regridder)
+eval_era5 = xarray_utils.fill_nan_with_nearest(eval_era5)
+```
+Prepare all-forcing files. Here we use a constant foring file as example. The forcing file contains SST and sea ice concentration
+
+```python
+## Prepare climatological forcing data: Here we use 1979 to 2019
+
+era_1979_2019 = full_era5.sel(time=slice("1979-01-01", "1979-01-31"))
+full_forcing_select = era_1979_2019[["sea_ice_cover", "sea_surface_temperature"]]
+forcing_data_slice = full_forcing_select.mean(dim="time", keep_attrs=True) 
+
+# Add back single time coordinate
+forcing_clim = forcing_data_slice.expand_dims(time=[full_forcing_select.time.values[0]])
+
+# Regrid forcing file
+forcing_ngcm28 =  xarray_utils.regrid(forcing_clim, regridder)
+forcing_ngcm28 = xarray_utils.fill_nan_with_nearest(forcing_ngcm28)
+```
+Run the model, save daily output and restart files for every 30 days:
+
+```python
+
+# ==============================
+#   CONFIG
+# ==============================
+
+RESTART_ROOT = "/data/xxx/xxx/NeuralGCM_restart/ngcm28_restarts_test"
+restart_step = 30  # the folder we saved previously
+
+nyears = 1
+ndays = 30
+inner_steps = 24  # model internal step = 24 hours
+outer_steps = nyears * ndays * 24 // inner_steps  # = 30 days
+timedelta = np.timedelta64(1, 'h') * inner_steps
+times = (np.arange(outer_steps) * inner_steps)  # hours since t0
+
+os.makedirs(RESTART_ROOT, exist_ok=True)
+
+# ==============================
+#   INITIAL STATE (from ERA5)
+# ==============================
+
+inputs = model.inputs_from_xarray(eval_ngcm28.isel(time=0))
+input_forcings = model.forcings_from_xarray(eval_ngcm28.isel(time=0))
+rng_key = jax.random.key(42)  # important for stochastic model
+initial_state = model.encode(inputs, input_forcings, rng_key)
+
+# ==============================
+#   FORCINGS FOR THIS SEGMENT
+# ==============================
+all_forcings = model.forcings_from_xarray(forcing_ngcm28)
+
+
+# ==============================
+#   RUN MODEL
+# ==============================
+final_state, predictions = model.unroll(
+    initial_state,
+    all_forcings,
+    steps=outer_steps,
+    timedelta=timedelta,
+    start_with_input=True,
+) 
+
+predictions_ds = model.data_to_xarray(predictions, times=times)
+predictions_ds.to_netcdf("/data/kezhoulumelody/melody_data/NeuralGCM_output/Testing/ngcm28_deterministic-run_segment_0001.nc")
+
+# ==============================
+#   SAVE RESTART FILES
+# ==============================
+
+# we'll label this restart by the step index we reached (30)
+step_index = outer_steps 
+
+ckpt_path = os.path.join(RESTART_ROOT, str(step_index))  # ".../30"
+
+checkpointer = ocp.StandardCheckpointer()
+checkpointer.save(ckpt_path, final_state)
+
+print(f"Saved restart at step {step_index} in {ckpt_path}")
+
+```
+
+
+
