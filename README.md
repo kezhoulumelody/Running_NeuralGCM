@@ -318,7 +318,7 @@ final_state_2, predictions_2 = model.unroll(
     all_forcings,
     steps=extra_outer_steps,
     timedelta=timedelta,
-    start_with_input=True,   # IMPORTANT: we're continuing, not restarting from ERA5
+    start_with_input=True,  
 )
 
 # Convert to xarray
