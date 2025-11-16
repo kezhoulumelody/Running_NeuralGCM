@@ -25,7 +25,18 @@ conda install -y \
 # CUDA 13 GPU JAX
 pip install --upgrade "jax[cuda13]"
 ```
-[!NOTE]
-We need to check if JAX is correctly installed by running the following python command:
+> [!NOTE]
+> We need to check if JAX is correctly installed by running the following python command:
 
+```python
+import jax, jax.numpy as jnp
+print("JAX version:", jax.__version__)
+print("Backend:", jax.default_backend())
+print("Devices:", jax.devices())
 
+x = jnp.arange(5.0)
+print("x^2:", x**2)
+
+for d in jax.devices():
+    print("Device:", d, "platform:", d.platform)
+```
