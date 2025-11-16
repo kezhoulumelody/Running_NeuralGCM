@@ -42,6 +42,6 @@ for d in jax.devices():
 ```
 Correctly installed JAX should give output similar to:
 
-Device: cuda:0 platform: gpu
+Device: cuda:0 platform: gpu\\
 Device: cuda:1 platform: gpu
 
