@@ -274,7 +274,7 @@ We can also start from saved restart file. Note, restart file is NOT directly sa
 # ==============================
 
 ## Restore the state at step 30 
-RESTART_ROOT = "/data/kezhoulumelody/melody_data/NeuralGCM_restart/ngcm28_restarts_test"
+RESTART_ROOT = "/data/xxx/xxx/NeuralGCM_restart/ngcm28_restarts_test"
 
 # We stopped the first run at step 30
 restart_step = 30
