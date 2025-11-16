@@ -23,7 +23,7 @@ conda install -y \
     matplotlib jupyterlab pip
 
 # CUDA 13 GPU JAX
-pip install --upgrade "jax[cuda13]"
+pip install --upgrade "jax[cuda13] flax dm-haiku optax"
 ```
 > [!NOTE]
 > We need to check if JAX is correctly installed by running the following python command:
@@ -82,4 +82,6 @@ Next we install the Neural GCM from https://neuralgcm.readthedocs.io/en/stable/i
 
 ```bash
 pip install neuralgcm
+
 ```
+
